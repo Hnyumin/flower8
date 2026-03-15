@@ -6,15 +6,15 @@
   <title>꽃밤에 화분 보내기</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
-<div class="custom-cursor"></div>
+
 <body>
-  <!-- 광장(배경) -->
+  <!-- 광장 -->
   <main class="stage">
     <div id="tooltip" class="tooltip"></div>
     <div id="canvas"></div>
   </main>
 
-  <!-- 옵션 선택창 -->
+  <!-- 데스크탑/모바일 공용 옵션 패널 -->
   <aside class="panel" id="panel">
     <h1>⇧ shift + 8 = *</h1>
 
@@ -22,12 +22,10 @@
       shift의 화살표와 8, 그리고 꽃표가 만나면 어떻게 될까요? 나만의 화분을 만들어 여덟 번째 꽃밤에 축하 꽃을 보내주세요!
     </div>
 
-    <!-- ✅ 드롭다운 버튼(따로) -->
     <button id="dropdownBtn" class="dropdown-btn" type="button" aria-expanded="false">
       ▼
     </button>
 
-    <!-- ✅ 드롭다운 영역 -->
     <div class="panel-body" id="panelBody" aria-hidden="true">
 
       <div class="group">
@@ -75,12 +73,11 @@
       <label for="msg">남기고 싶은 말</label>
       <textarea id="msg" placeholder="메세지 입력" maxlength="120"></textarea>
 
-      <!-- ✅ 실제 전송 버튼(따로) -->
       <button id="sendBtn" class="send-btn" type="button">화분 보내기</button>
     </div>
   </aside>
 
-  <!-- 프리뷰 창 -->
+  <!-- 데스크탑 프리뷰 -->
   <aside class="preview-panel" aria-hidden="true">
     <div class="preview-box" id="previewBox">
       <img class="layer flower" id="prevFlower" src="" alt="">
@@ -89,6 +86,14 @@
     </div>
   </aside>
 
+  <!-- 모바일 플로팅 버튼 -->
+  <button id="mobileFab" class="mobile-fab" type="button" aria-label="꽃 보내기 패널 열기">
+    꽃 보내기
+  </button>
+
+  <!-- 모바일 하단 패널 배경 -->
+  <div id="mobileSheetBackdrop" class="mobile-sheet-backdrop"></div>
+
   <!-- 팝업 -->
   <div id="modal" class="modal" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true">
@@ -96,6 +101,10 @@
       <button id="modalClose" class="modal-btn" type="button">확인</button>
     </div>
   </div>
+
+  <!-- 커스텀 커서 -->
+  <div class="custom-cursor"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.9.3/lib/p5.min.js"></script>
   <script src="./script.js"></script>
