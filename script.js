@@ -20,6 +20,8 @@ let selected = { flowerIdx:-1, stemIdx:-1, potIdx:-1 };
 
 let camX = 0, camY = 0;
 let isPanning = false;
+let lastTouchX = 0;
+let lastTouchY = 0;
 
 let pinnedIndex = -1;
 let pinnedExpireAt = 0;
@@ -55,65 +57,91 @@ function isMobile(){
 }
 
 /* 커서 */
-window.addEventListener("mousemove", (e)=>{
+function moveCursorTo(x, y){
   if(!cursorEl) return;
-  cursorEl.style.left = e.clientX + "px";
-  cursorEl.style.top  = e.clientY + "px";
+  cursorEl.style.left = `${x}px`;
+  cursorEl.style.top = `${y}px`;
+}
+
+window.addEventListener("pointermove", (e)=>{
+  moveCursorTo(e.clientX, e.clientY);
 });
 
-/* 패널 열고 닫기 */
+window.addEventListener("pointerdown", (e)=>{
+  moveCursorTo(e.clientX, e.clientY);
+});
+
+/* 패널 */
+function syncToggleButtons(){
+  const isOpen = panel.classList.contains("open");
+
+  if(dropdownBtn){
+    dropdownBtn.textContent = isOpen ? "▲" : "▼";
+  }
+
+  if(mobileFab){
+    mobileFab.textContent = isOpen ? "▲" : "▼";
+  }
+}
+
 function openPanel(){
   panel.classList.add("open");
-  if(dropdownBtn) dropdownBtn.textContent = "▲";
   if(isMobile()) mobileSheetBackdrop?.classList.add("show");
+  syncToggleButtons();
 }
+
 function closePanel(){
   panel.classList.remove("open");
-  if(dropdownBtn) dropdownBtn.textContent = "▼";
   if(isMobile()) mobileSheetBackdrop?.classList.remove("show");
+  syncToggleButtons();
 }
 
-dropdownBtn?.addEventListener("click", ()=>{
+function togglePanel(){
   if(panel.classList.contains("open")) closePanel();
   else openPanel();
-});
+}
 
-mobileFab?.addEventListener("click", ()=>{
-  openPanel();
-});
-
-mobileSheetBackdrop?.addEventListener("click", ()=>{
-  closePanel();
-});
+dropdownBtn?.addEventListener("click", togglePanel);
+mobileFab?.addEventListener("click", togglePanel);
+mobileSheetBackdrop?.addEventListener("click", closePanel);
 
 /* 모달 */
 function openModal(){ modal?.classList.add("show"); }
 function closeModal(){ modal?.classList.remove("show"); }
 
 modalClose?.addEventListener("click", closeModal);
-modal?.addEventListener("click",(e)=>{ if(e.target===modal) closeModal(); });
+modal?.addEventListener("click", (e)=>{ if(e.target === modal) closeModal(); });
 
 /* 프리뷰 */
 function updatePreview(){
-  if(selected.flowerIdx === -1) prevFlower.style.display="none";
-  else { prevFlower.style.display="block"; prevFlower.src = FLOWER_PATHS[selected.flowerIdx]; }
+  if(selected.flowerIdx === -1) prevFlower.style.display = "none";
+  else {
+    prevFlower.style.display = "block";
+    prevFlower.src = FLOWER_PATHS[selected.flowerIdx];
+  }
 
-  if(selected.stemIdx === -1) prevStem.style.display="none";
-  else { prevStem.style.display="block"; prevStem.src = STEM_PATHS[selected.stemIdx]; }
+  if(selected.stemIdx === -1) prevStem.style.display = "none";
+  else {
+    prevStem.style.display = "block";
+    prevStem.src = STEM_PATHS[selected.stemIdx];
+  }
 
-  if(selected.potIdx === -1) prevPot.style.display="none";
-  else { prevPot.style.display="block"; prevPot.src = POT_PATHS[selected.potIdx]; }
+  if(selected.potIdx === -1) prevPot.style.display = "none";
+  else {
+    prevPot.style.display = "block";
+    prevPot.src = POT_PATHS[selected.potIdx];
+  }
 }
 updatePreview();
 
 /* 옵션 선택 */
 document.querySelectorAll(".options").forEach((row)=>{
-  row.addEventListener("click",(e)=>{
+  row.addEventListener("click", (e)=>{
     const btn = e.target.closest(".option");
     if(!btn) return;
 
     const type = row.dataset.type;
-    row.querySelectorAll(".option").forEach(el=>el.classList.remove("selected"));
+    row.querySelectorAll(".option").forEach(el => el.classList.remove("selected"));
     btn.classList.add("selected");
 
     selected[type + "Idx"] = parseInt(btn.dataset.value, 10);
@@ -159,7 +187,6 @@ async function loadFromSupabase(){
 
 /* 전송 */
 sendBtn?.addEventListener("click", async ()=>{
-
   if(selected.flowerIdx === -1 || selected.stemIdx === -1 || selected.potIdx === -1){
     openModal();
     return;
@@ -170,7 +197,7 @@ sendBtn?.addEventListener("click", async ()=>{
     x = random(160, width - 160) - camX;
     y = random(260, height - 120) - camY;
     attempts++;
-  }while(isOverlapping(x, y) && attempts < 250);
+  } while(isOverlapping(x, y) && attempts < 250);
 
   const newPot = {
     x, y,
@@ -211,6 +238,7 @@ function preload(){
   const safeLoad = (path, arr, i)=>{
     loadImage(path, img=>arr[i]=img, ()=>arr[i]=null);
   };
+
   for(let i=0;i<7;i++){
     safeLoad(FLOWER_PATHS[i], FLOWERS, i);
     safeLoad(STEM_PATHS[i], STEMS, i);
@@ -228,6 +256,7 @@ function setup(){
 
   updateBaseSize();
   loadFromSupabase();
+  syncToggleButtons();
 }
 
 function windowResized(){
@@ -238,6 +267,8 @@ function windowResized(){
   if(!isMobile()){
     mobileSheetBackdrop?.classList.remove("show");
   }
+
+  syncToggleButtons();
 }
 
 function draw(){
@@ -258,8 +289,10 @@ function draw(){
     const p = pots[i];
     drawPot(p);
 
-    if(wx > p.x - BASE_SIZE*0.75 && wx < p.x + BASE_SIZE*0.75 &&
-       wy > p.y - BASE_SIZE*2.1  && wy < p.y + BASE_SIZE*0.2){
+    if(
+      wx > p.x - BASE_SIZE*0.75 && wx < p.x + BASE_SIZE*0.75 &&
+      wy > p.y - BASE_SIZE*2.1  && wy < p.y + BASE_SIZE*0.2
+    ){
       hovered = i;
     }
   }
@@ -307,10 +340,14 @@ function drawPot(p){
   pop();
 }
 
-/* 모바일 터치 시 툴팁 표시 */
+function isUIElementAt(x, y){
+  const el = document.elementFromPoint(x, y);
+  return !!(el && (el.closest(".panel") || el.closest(".preview-panel") || el.closest(".modal")));
+}
+
+/* 데스크톱 */
 function mousePressed(){
-  const el = document.elementFromPoint(mouseX, mouseY);
-  if(el && (el.closest(".panel") || el.closest(".preview-panel") || el.closest(".modal"))) return;
+  if(isUIElementAt(mouseX, mouseY)) return;
 
   let tappedIndex = -1;
 
@@ -331,20 +368,80 @@ function mousePressed(){
   if(isMobile() && tappedIndex !== -1){
     pinnedIndex = tappedIndex;
     pinnedExpireAt = millis() + 2500;
-    return;
+    return false;
   }
 
   isPanning = true;
+  return false;
 }
 
 function mouseDragged(){
-  if(!isPanning) return;
+  if(!isPanning) return false;
   camX += movedX;
   camY += movedY;
+  return false;
 }
 
 function mouseReleased(){
   isPanning = false;
+  return false;
+}
+
+/* 모바일 터치 */
+function touchStarted(){
+  if(!touches || touches.length === 0) return false;
+
+  const tx = touches[0].x;
+  const ty = touches[0].y;
+
+  if(isUIElementAt(tx, ty)) return false;
+
+  let tappedIndex = -1;
+
+  for(let i=0;i<pots.length;i++){
+    const p = pots[i];
+    const wx = tx - camX;
+    const wy = ty - camY;
+
+    if(
+      wx > p.x - BASE_SIZE*0.75 && wx < p.x + BASE_SIZE*0.75 &&
+      wy > p.y - BASE_SIZE*2.1  && wy < p.y + BASE_SIZE*0.2
+    ){
+      tappedIndex = i;
+      break;
+    }
+  }
+
+  if(tappedIndex !== -1){
+    pinnedIndex = tappedIndex;
+    pinnedExpireAt = millis() + 2500;
+  }
+
+  isPanning = true;
+  lastTouchX = tx;
+  lastTouchY = ty;
+
+  return false;
+}
+
+function touchMoved(){
+  if(!isPanning || !touches || touches.length === 0) return false;
+
+  const tx = touches[0].x;
+  const ty = touches[0].y;
+
+  camX += tx - lastTouchX;
+  camY += ty - lastTouchY;
+
+  lastTouchX = tx;
+  lastTouchY = ty;
+
+  return false;
+}
+
+function touchEnded(){
+  isPanning = false;
+  return false;
 }
 
 function escapeHtml(str){
