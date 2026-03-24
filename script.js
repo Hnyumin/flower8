@@ -56,7 +56,9 @@ function isMobile(){
   return window.matchMedia("(max-width: 768px)").matches;
 }
 
-/* 커서 */
+/* =========================
+   커서
+========================= */
 function moveCursorTo(x, y){
   if(!cursorEl) return;
   cursorEl.style.left = `${x}px`;
@@ -71,16 +73,20 @@ window.addEventListener("pointerdown", (e)=>{
   moveCursorTo(e.clientX, e.clientY);
 });
 
-/* 패널 */
+/* =========================
+   패널 열고닫기
+========================= */
 function syncToggleButtons(){
   const isOpen = panel.classList.contains("open");
 
   if(dropdownBtn){
     dropdownBtn.textContent = isOpen ? "▲" : "▼";
+    dropdownBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
   }
 
   if(mobileFab){
     mobileFab.textContent = isOpen ? "▲" : "▼";
+    mobileFab.setAttribute("aria-expanded", isOpen ? "true" : "false");
   }
 }
 
@@ -92,11 +98,13 @@ function openPanel(){
 
 function closePanel(){
   panel.classList.remove("open");
-  if(isMobile()) mobileSheetBackdrop?.classList.remove("show");
+  mobileSheetBackdrop?.classList.remove("show");
   syncToggleButtons();
 }
 
-function togglePanel(){
+function togglePanel(e){
+  if(e) e.stopPropagation();
+
   if(panel.classList.contains("open")) closePanel();
   else openPanel();
 }
@@ -105,43 +113,56 @@ dropdownBtn?.addEventListener("click", togglePanel);
 mobileFab?.addEventListener("click", togglePanel);
 mobileSheetBackdrop?.addEventListener("click", closePanel);
 
-/* 모달 */
+/* =========================
+   모달
+========================= */
 function openModal(){ modal?.classList.add("show"); }
 function closeModal(){ modal?.classList.remove("show"); }
 
 modalClose?.addEventListener("click", closeModal);
-modal?.addEventListener("click", (e)=>{ if(e.target === modal) closeModal(); });
+modal?.addEventListener("click", (e)=>{
+  if(e.target === modal) closeModal();
+});
 
-/* 프리뷰 */
+/* =========================
+   프리뷰
+========================= */
 function updatePreview(){
-  if(selected.flowerIdx === -1) prevFlower.style.display = "none";
-  else {
+  if(selected.flowerIdx === -1){
+    prevFlower.style.display = "none";
+  } else {
     prevFlower.style.display = "block";
     prevFlower.src = FLOWER_PATHS[selected.flowerIdx];
   }
 
-  if(selected.stemIdx === -1) prevStem.style.display = "none";
-  else {
+  if(selected.stemIdx === -1){
+    prevStem.style.display = "none";
+  } else {
     prevStem.style.display = "block";
     prevStem.src = STEM_PATHS[selected.stemIdx];
   }
 
-  if(selected.potIdx === -1) prevPot.style.display = "none";
-  else {
+  if(selected.potIdx === -1){
+    prevPot.style.display = "none";
+  } else {
     prevPot.style.display = "block";
     prevPot.src = POT_PATHS[selected.potIdx];
   }
 }
 updatePreview();
 
-/* 옵션 선택 */
+/* =========================
+   옵션 선택
+========================= */
 document.querySelectorAll(".options").forEach((row)=>{
   row.addEventListener("click", (e)=>{
+    e.stopPropagation();
+
     const btn = e.target.closest(".option");
     if(!btn) return;
 
     const type = row.dataset.type;
-    row.querySelectorAll(".option").forEach(el => el.classList.remove("selected"));
+    row.querySelectorAll(".option").forEach(el=>el.classList.remove("selected"));
     btn.classList.add("selected");
 
     selected[type + "Idx"] = parseInt(btn.dataset.value, 10);
@@ -149,20 +170,32 @@ document.querySelectorAll(".options").forEach((row)=>{
   });
 });
 
+/* =========================
+   화분 크기
+========================= */
 function updateBaseSize(){
   const raw = height * 0.07;
   BASE_SIZE = constrain(raw, 60, 120);
 }
 
+/* =========================
+   겹침 판정
+========================= */
 function isOverlapping(x, y){
   const hitW = BASE_SIZE * 1.6;
   const hitH = BASE_SIZE * 3.0;
+
   for(const p of pots){
-    if(Math.abs(x - p.x) < hitW && Math.abs(y - p.y) < hitH) return true;
+    if(Math.abs(x - p.x) < hitW && Math.abs(y - p.y) < hitH){
+      return true;
+    }
   }
   return false;
 }
 
+/* =========================
+   Supabase 불러오기
+========================= */
 async function loadFromSupabase(){
   const { data, error } = await sb
     .from("pots")
@@ -185,14 +218,19 @@ async function loadFromSupabase(){
   }));
 }
 
-/* 전송 */
-sendBtn?.addEventListener("click", async ()=>{
+/* =========================
+   전송
+========================= */
+sendBtn?.addEventListener("click", async (e)=>{
+  e.stopPropagation();
+
   if(selected.flowerIdx === -1 || selected.stemIdx === -1 || selected.potIdx === -1){
     openModal();
     return;
   }
 
   let x, y, attempts = 0;
+
   do{
     x = random(160, width - 160) - camX;
     y = random(260, height - 120) - camY;
@@ -219,6 +257,7 @@ sendBtn?.addEventListener("click", async ()=>{
     name: newPot.name,
     msg: newPot.msg
   }]);
+
   if(error) console.error(error);
 
   pinnedIndex = pots.length - 1;
@@ -234,6 +273,9 @@ sendBtn?.addEventListener("click", async ()=>{
   updatePreview();
 });
 
+/* =========================
+   p5 preload
+========================= */
 function preload(){
   const safeLoad = (path, arr, i)=>{
     loadImage(path, img=>arr[i]=img, ()=>arr[i]=null);
@@ -246,6 +288,9 @@ function preload(){
   }
 }
 
+/* =========================
+   p5 setup
+========================= */
 function setup(){
   const stage = document.querySelector(".stage");
   const c = createCanvas(stage.clientWidth, stage.clientHeight);
@@ -271,6 +316,9 @@ function windowResized(){
   syncToggleButtons();
 }
 
+/* =========================
+   draw
+========================= */
 function draw(){
   background("#e5e3e3");
 
@@ -306,6 +354,7 @@ function draw(){
 
   if(showIndex !== -1){
     const p = pots[showIndex];
+
     if(!p.msg && (!p.name || p.name === "익명")) return;
 
     const sx = p.x + camX;
@@ -321,8 +370,11 @@ function draw(){
   }
 }
 
+/* =========================
+   화분 그리기
+========================= */
 function drawImageKeepRatio(img, x, y, targetW){
-  if(!img || img.width===0 || img.height===0) return;
+  if(!img || img.width === 0 || img.height === 0) return;
   const ratio = img.height / img.width;
   image(img, x, y, targetW, targetW * ratio);
 }
@@ -340,36 +392,27 @@ function drawPot(p){
   pop();
 }
 
-function isUIElementAt(x, y){
-  const el = document.elementFromPoint(x, y);
-  return !!(el && (el.closest(".panel") || el.closest(".preview-panel") || el.closest(".modal")));
+/* =========================
+   UI 영역 판별
+========================= */
+function isUIElementAtClient(clientX, clientY){
+  const el = document.elementFromPoint(clientX, clientY);
+  return !!(el && (
+    el.closest(".panel") ||
+    el.closest(".preview-panel") ||
+    el.closest(".modal") ||
+    el.closest(".mobile-fab")
+  ));
 }
 
-/* 데스크톱 */
-function mousePressed(){
-  if(isUIElementAt(mouseX, mouseY)) return;
+/* =========================
+   데스크탑 마우스
+========================= */
+function mousePressed(event){
+  const clientX = event?.clientX ?? window.event?.clientX ?? 0;
+  const clientY = event?.clientY ?? window.event?.clientY ?? 0;
 
-  let tappedIndex = -1;
-
-  for(let i=0;i<pots.length;i++){
-    const p = pots[i];
-    const wx = mouseX - camX;
-    const wy = mouseY - camY;
-
-    if(
-      wx > p.x - BASE_SIZE*0.75 && wx < p.x + BASE_SIZE*0.75 &&
-      wy > p.y - BASE_SIZE*2.1  && wy < p.y + BASE_SIZE*0.2
-    ){
-      tappedIndex = i;
-      break;
-    }
-  }
-
-  if(isMobile() && tappedIndex !== -1){
-    pinnedIndex = tappedIndex;
-    pinnedExpireAt = millis() + 2500;
-    return false;
-  }
+  if(isUIElementAtClient(clientX, clientY)) return false;
 
   isPanning = true;
   return false;
@@ -387,14 +430,18 @@ function mouseReleased(){
   return false;
 }
 
-/* 모바일 터치 */
+/* =========================
+   모바일 터치
+========================= */
 function touchStarted(){
   if(!touches || touches.length === 0) return false;
 
   const tx = touches[0].x;
   const ty = touches[0].y;
+  const clientX = touches[0].winX ?? tx;
+  const clientY = touches[0].winY ?? ty;
 
-  if(isUIElementAt(tx, ty)) return false;
+  if(isUIElementAtClient(clientX, clientY)) return false;
 
   let tappedIndex = -1;
 
@@ -444,6 +491,9 @@ function touchEnded(){
   return false;
 }
 
+/* =========================
+   안전 문자열
+========================= */
 function escapeHtml(str){
   return String(str)
     .replaceAll("&","&amp;")
