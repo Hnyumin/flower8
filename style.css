@@ -4,8 +4,8 @@
   --fg: #231d1a;
   --preview-size: 4.875rem;
 
-  /* 모바일 하단 패널 */
-  --mobile-peek: 9.5rem;             /* 닫혀 있을 때 보이는 높이 */
+  /* 모바일 */
+  --mobile-peek: 9.5rem;
   --mobile-panel-open: min(78dvh, 36rem);
 }
 
@@ -43,7 +43,9 @@ html, body{
   z-index:0;
 }
 
-/* desktop panel */
+/* =========================
+   데스크탑 패널
+========================= */
 .panel{
   position:fixed;
   left:1.25rem;
@@ -175,20 +177,26 @@ textarea{
   -webkit-tap-highlight-color:transparent;
 }
 
+/* =========================
+   데스크탑 프리뷰
+========================= */
 .preview-panel{
   position:fixed;
   left: calc(1.25rem + 20rem + 0.75rem);
   top:1.25rem;
-  z-index:200;
+  z-index:180;
   width:10rem;
   background:var(--bg);
   border:0.125rem solid var(--fg);
   box-shadow:0 0.625rem 1.875rem rgba(0,0,0,0.08);
   padding:0.75rem;
   display:none;
+  pointer-events:none;
 }
 
-.panel.open + .preview-panel{ display:block; }
+.panel.open + .preview-panel{
+  display:block;
+}
 
 .preview-box{
   width:100%;
@@ -211,7 +219,9 @@ textarea{
 .preview-box .layer.stem{ top:4.0625rem; }
 .preview-box .layer.pot{ top:9.18rem; }
 
-/* fixed-size tooltip */
+/* =========================
+   툴팁
+========================= */
 .tooltip{
   position:absolute;
   background:var(--bg);
@@ -242,6 +252,9 @@ textarea{
   opacity:0.85;
 }
 
+/* =========================
+   모달
+========================= */
 .modal{
   position:fixed;
   inset:0;
@@ -284,6 +297,9 @@ textarea{
   -webkit-tap-highlight-color:transparent;
 }
 
+/* =========================
+   커스텀 커서
+========================= */
 .custom-cursor{
   position:fixed;
   width:24px;
@@ -302,13 +318,15 @@ textarea{
   display:none;
 }
 
-/* mobile */
+/* =========================
+   모바일
+========================= */
 @media (max-width: 768px){
   html{
     font-size:15px;
   }
 
-  /* 모바일 하단 패널 */
+  /* 패널 */
   .panel{
     left:0;
     right:0;
@@ -324,8 +342,6 @@ textarea{
     transform:translateY(calc(100% - var(--mobile-peek)));
     transition:transform 0.28s ease;
     z-index:260;
-
-    /* 닫혔을 때는 패널 자체가 터치 가로채지 않게 */
     pointer-events:none;
   }
 
@@ -347,17 +363,18 @@ textarea{
     margin-bottom:0.7rem;
   }
 
+  /* 모바일에서는 패널 내부 화살표 숨김 */
   .dropdown-btn{
     display:none;
   }
 
-  /* ✅ 닫혀 있을 때도 제목/설명은 보이고,
-     열리면 선택 UI를 스크롤 가능하게 */
+  /* 닫혀 있을 때도 설명 보이고,
+     열리면 아래 내용 다 스크롤 가능 */
   .panel-body{
     display:block !important;
     overflow-y:auto;
     max-height:calc(var(--mobile-panel-open) - var(--mobile-peek) + 1rem);
-    padding-bottom:5rem; /* 화분 보내기 버튼 안 잘리게 */
+    padding-bottom:5rem;
   }
 
   .group-title{
@@ -392,30 +409,39 @@ textarea{
     margin-bottom:1rem;
   }
 
-  /* ✅ 프리뷰 박스 다시 보이게 */
+  /* 모바일 프리뷰:
+     패널 열렸을 때만,
+     위 중앙에 작은 세로 카드 형태 */
   .preview-panel{
-    display:block !important;
+    display:none !important;
     position:fixed;
-    left:0.75rem;
-    right:0.75rem;
-    width:auto;
+    left:50%;
+    right:auto;
+    width:9rem;
     top:auto;
-    bottom:calc(var(--mobile-peek) + 0.75rem);
+    bottom:calc(var(--mobile-panel-open) + 0.75rem);
+    transform:translateX(-50%);
     z-index:220;
-    padding:0.75rem;
+    padding:0.625rem;
+    pointer-events:none;
   }
 
   .panel.open + .preview-panel{
-    bottom:calc(var(--mobile-panel-open) + 0.75rem);
+    display:block !important;
   }
 
   .preview-box{
-    height:10rem;
+    width:100%;
+    height:12rem;
   }
 
-  .preview-box .layer.flower{ top:-0.2rem; }
-  .preview-box .layer.stem{ top:2.8rem; }
-  .preview-box .layer.pot{ top:6.2rem; }
+  .preview-box .layer{
+    width:4.5rem;
+  }
+
+  .preview-box .layer.flower{ top:-0.15rem; }
+  .preview-box .layer.stem{ top:3.2rem; }
+  .preview-box .layer.pot{ top:7rem; }
 
   .mobile-fab{
     display:block;
