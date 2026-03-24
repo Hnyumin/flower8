@@ -56,9 +56,7 @@ function isMobile(){
   return window.matchMedia("(max-width: 768px)").matches;
 }
 
-/* =========================
-   커서
-========================= */
+/* cursor */
 function moveCursorTo(x, y){
   if(!cursorEl) return;
   cursorEl.style.left = `${x}px`;
@@ -73,9 +71,7 @@ window.addEventListener("pointerdown", (e)=>{
   moveCursorTo(e.clientX, e.clientY);
 });
 
-/* =========================
-   패널 열고닫기
-========================= */
+/* panel */
 function syncToggleButtons(){
   const isOpen = panel.classList.contains("open");
 
@@ -103,30 +99,42 @@ function closePanel(){
 }
 
 function togglePanel(e){
-  if(e) e.stopPropagation();
+  if(e){
+    e.preventDefault();
+    e.stopPropagation();
+  }
 
   if(panel.classList.contains("open")) closePanel();
   else openPanel();
 }
 
 dropdownBtn?.addEventListener("click", togglePanel);
-mobileFab?.addEventListener("click", togglePanel);
-mobileSheetBackdrop?.addEventListener("click", closePanel);
+dropdownBtn?.addEventListener("touchstart", togglePanel, { passive:false });
 
-/* =========================
-   모달
-========================= */
+mobileFab?.addEventListener("click", togglePanel);
+mobileFab?.addEventListener("touchstart", togglePanel, { passive:false });
+
+mobileSheetBackdrop?.addEventListener("click", closePanel);
+mobileSheetBackdrop?.addEventListener("touchstart", (e)=>{
+  e.preventDefault();
+  closePanel();
+}, { passive:false });
+
+/* modal */
 function openModal(){ modal?.classList.add("show"); }
 function closeModal(){ modal?.classList.remove("show"); }
 
 modalClose?.addEventListener("click", closeModal);
+modalClose?.addEventListener("touchstart", (e)=>{
+  e.preventDefault();
+  closeModal();
+}, { passive:false });
+
 modal?.addEventListener("click", (e)=>{
   if(e.target === modal) closeModal();
 });
 
-/* =========================
-   프리뷰
-========================= */
+/* preview */
 function updatePreview(){
   if(selected.flowerIdx === -1){
     prevFlower.style.display = "none";
@@ -151,9 +159,7 @@ function updatePreview(){
 }
 updatePreview();
 
-/* =========================
-   옵션 선택
-========================= */
+/* selection */
 document.querySelectorAll(".options").forEach((row)=>{
   row.addEventListener("click", (e)=>{
     e.stopPropagation();
@@ -168,19 +174,17 @@ document.querySelectorAll(".options").forEach((row)=>{
     selected[type + "Idx"] = parseInt(btn.dataset.value, 10);
     updatePreview();
   });
+
+  row.addEventListener("touchstart", (e)=>{
+    e.stopPropagation();
+  }, { passive:true });
 });
 
-/* =========================
-   화분 크기
-========================= */
 function updateBaseSize(){
   const raw = height * 0.07;
   BASE_SIZE = constrain(raw, 60, 120);
 }
 
-/* =========================
-   겹침 판정
-========================= */
 function isOverlapping(x, y){
   const hitW = BASE_SIZE * 1.6;
   const hitH = BASE_SIZE * 3.0;
@@ -193,9 +197,6 @@ function isOverlapping(x, y){
   return false;
 }
 
-/* =========================
-   Supabase 불러오기
-========================= */
 async function loadFromSupabase(){
   const { data, error } = await sb
     .from("pots")
@@ -218,11 +219,12 @@ async function loadFromSupabase(){
   }));
 }
 
-/* =========================
-   전송
-========================= */
-sendBtn?.addEventListener("click", async (e)=>{
-  e.stopPropagation();
+/* send */
+async function handleSend(e){
+  if(e){
+    e.preventDefault();
+    e.stopPropagation();
+  }
 
   if(selected.flowerIdx === -1 || selected.stemIdx === -1 || selected.potIdx === -1){
     openModal();
@@ -266,16 +268,16 @@ sendBtn?.addEventListener("click", async (e)=>{
   closePanel();
 
   nameInput.value = "";
-  msgInput.value  = "";
+  msgInput.value = "";
 
   selected = { flowerIdx:-1, stemIdx:-1, potIdx:-1 };
   document.querySelectorAll(".option.selected").forEach(el=>el.classList.remove("selected"));
   updatePreview();
-});
+}
 
-/* =========================
-   p5 preload
-========================= */
+sendBtn?.addEventListener("click", handleSend);
+sendBtn?.addEventListener("touchstart", handleSend, { passive:false });
+
 function preload(){
   const safeLoad = (path, arr, i)=>{
     loadImage(path, img=>arr[i]=img, ()=>arr[i]=null);
@@ -288,9 +290,6 @@ function preload(){
   }
 }
 
-/* =========================
-   p5 setup
-========================= */
 function setup(){
   const stage = document.querySelector(".stage");
   const c = createCanvas(stage.clientWidth, stage.clientHeight);
@@ -302,6 +301,7 @@ function setup(){
   updateBaseSize();
   loadFromSupabase();
   syncToggleButtons();
+  closePanel();
 }
 
 function windowResized(){
@@ -316,9 +316,6 @@ function windowResized(){
   syncToggleButtons();
 }
 
-/* =========================
-   draw
-========================= */
 function draw(){
   background("#e5e3e3");
 
@@ -339,7 +336,7 @@ function draw(){
 
     if(
       wx > p.x - BASE_SIZE*0.75 && wx < p.x + BASE_SIZE*0.75 &&
-      wy > p.y - BASE_SIZE*2.1  && wy < p.y + BASE_SIZE*0.2
+      wy > p.y - BASE_SIZE*2.1 && wy < p.y + BASE_SIZE*0.2
     ){
       hovered = i;
     }
@@ -370,9 +367,6 @@ function draw(){
   }
 }
 
-/* =========================
-   화분 그리기
-========================= */
 function drawImageKeepRatio(img, x, y, targetW){
   if(!img || img.width === 0 || img.height === 0) return;
   const ratio = img.height / img.width;
@@ -392,9 +386,6 @@ function drawPot(p){
   pop();
 }
 
-/* =========================
-   UI 영역 판별
-========================= */
 function isUIElementAtClient(clientX, clientY){
   const el = document.elementFromPoint(clientX, clientY);
   return !!(el && (
@@ -405,12 +396,10 @@ function isUIElementAtClient(clientX, clientY){
   ));
 }
 
-/* =========================
-   데스크탑 마우스
-========================= */
+/* desktop drag */
 function mousePressed(event){
-  const clientX = event?.clientX ?? window.event?.clientX ?? 0;
-  const clientY = event?.clientY ?? window.event?.clientY ?? 0;
+  const clientX = event?.clientX ?? 0;
+  const clientY = event?.clientY ?? 0;
 
   if(isUIElementAtClient(clientX, clientY)) return false;
 
@@ -430,9 +419,7 @@ function mouseReleased(){
   return false;
 }
 
-/* =========================
-   모바일 터치
-========================= */
+/* mobile touch */
 function touchStarted(){
   if(!touches || touches.length === 0) return false;
 
@@ -452,7 +439,7 @@ function touchStarted(){
 
     if(
       wx > p.x - BASE_SIZE*0.75 && wx < p.x + BASE_SIZE*0.75 &&
-      wy > p.y - BASE_SIZE*2.1  && wy < p.y + BASE_SIZE*0.2
+      wy > p.y - BASE_SIZE*2.1 && wy < p.y + BASE_SIZE*0.2
     ){
       tappedIndex = i;
       break;
@@ -491,9 +478,6 @@ function touchEnded(){
   return false;
 }
 
-/* =========================
-   안전 문자열
-========================= */
 function escapeHtml(str){
   return String(str)
     .replaceAll("&","&amp;")
